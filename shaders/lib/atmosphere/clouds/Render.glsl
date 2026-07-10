@@ -179,13 +179,16 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 
 			// Intersect the volume
 			if (intersection.y > 0.0) {
-				float rayLength = clamp(intersection.y - intersection.x, 0.0, 5e4);
+                const float maxRaymarchingDist = 5e4;
+				float tMax = clamp(intersection.y - intersection.x, 0.0, maxRaymarchingDist);
 
-				float raySteps = float(CLOUD_LOW_SAMPLES_MAX) / 5e4 * rayLength;
-				raySteps = round(max(raySteps, float(CLOUD_LOW_SAMPLES_MIN)));
+                // Variable step count based on raymarching distance
+                float stepCount = mix(CLOUD_LOW_SAMPLES_MIN, CLOUD_LOW_SAMPLES_MAX, saturate(tMax * rcp(maxRaymarchingDist)));
+                float stepCountFloor = floor(stepCount);
+                float tMaxFloor = tMax * stepCountFloor / stepCount;
+                stepCountFloor = 1.0 / stepCountFloor;
 
-				float stepSize = rayLength * rcp(raySteps);
-				float rayT = intersection.x + stepSize * noise.x;
+				vec3 startPos = atmosphereViewPos + rayDir * intersection.x;
 
 				float sumDist = 0.0;
 
@@ -193,8 +196,17 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 				float transmittance = 1.0;
 
 				// Raymarch through the cloud volume
-				for (uint i = 0u; i < uint(raySteps); ++i, rayT += stepSize) {
-					vec3 rayPos = atmosphereViewPos + rayDir * rayT;
+				for (float i = 0.0; i < stepCount; ++i) {
+                    vec2 t01 = vec2(i, i + 1.0) * stepCountFloor;
+
+                    // Square distribution
+                    t01 *= t01;
+                    t01 *= tMaxFloor;
+
+                    float t = mix(t01.x, t01.y, noise.x);
+                    float dt = t01.y - t01.x;
+
+					vec3 rayPos = startPos + rayDir * t;
 
 					// Normalized height in clouds
 					float heightFraction = fma(length(rayPos), rcp(cloudLayer0.thickness), -cloudLayer0.minHeight / cloudLayer0.thickness);
@@ -202,7 +214,7 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 
 					// Compute sample cloud density
 					float dimensionalProfile;
-					float stepDensity = CloudVolumeDensity(rayPos, heightFraction, dimensionalProfile, rayT < 16e3);
+					float stepDensity = CloudVolumeDensity(rayPos, heightFraction, dimensionalProfile, true);
 
 					// Skip if no density
 					if (stepDensity > cloudDensityEpsilon) {
@@ -217,7 +229,7 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 						float scatteringGround = oms(dimensionalProfile) * 0.5 * uniformPhase;
 						scattering += scatteringGround * lightDir.y;
 
-						float stepOpticalDepth = stepDensity * stepSize;
+						float stepOpticalDepth = stepDensity * dt;
 						float stepTransmittance = exp2(-rLOG2 * cloudLayer0.coeff.extinction * stepOpticalDepth);
 
 						// Energy-conserving analytical integration from [Hillaire, 2016]
@@ -227,7 +239,7 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 
 						// Method from [Hillaire, 2016]
 						// Weighted by stepIntegral instead of transmittance
-						sumDist += rayT * stepIntegral;
+						sumDist += (t + intersection.x) * stepIntegral;
 
 						// Break if the transmittance is too small (optimization)
 						if (transmittance < cloudMinTransmittance) {
