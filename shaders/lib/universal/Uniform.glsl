@@ -38,7 +38,8 @@ uniform sampler3D curlNoise3D;
 uniform sampler3D baseNoiseTex;
 uniform sampler3D detailNoiseTex;
 
-uniform sampler2D cloudMapTex;
+uniform sampler2D cloudMapLo;
+uniform sampler2D cloudMapHi;
 uniform sampler2D verticalLut;
 uniform sampler2D cirroLutTex;
 

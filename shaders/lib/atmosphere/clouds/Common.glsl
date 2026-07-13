@@ -66,7 +66,7 @@
 	#define CLOUD_CI
 	#define CLOUD_CI_COVERAGE           0.5     // [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
-	// #define CLOUD_CS
+	#define CLOUD_CS
 	#define CLOUD_CS_COVERAGE           0.5     // [0.0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.75 0.8 0.85 0.9 0.95 1.0]
 
 	#define CLOUD_CC
@@ -92,8 +92,6 @@ const float cloudBackwardG          = -0.3;
 const float cloudLobeMixer          = 0.25;
 const float cloudSilverG 		    = 0.95;
 const float cloudSilverI 	        = 0.20;
-
-const float cloudMapExtend          = 96e3; // m
 
 const float cloudDensityEpsilon     = 0.001;
 const float cloudMinTransmittance   = 0.01;

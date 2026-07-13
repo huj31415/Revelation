@@ -131,12 +131,12 @@ void main() {
 
 	#ifdef DEBUG_CLOUD_MAP
 		ivec2 tempTexel = texelPos;
-		if (all(lessThan(tempTexel, textureSize(cloudMapTex, 0)))) {
-			finalOut = vec3(texelFetch(cloudMapTex, tempTexel, 0).x);
+		if (all(lessThan(tempTexel, textureSize(cloudMapLo, 0)))) {
+			finalOut = vec3(texelFetch(cloudMapLo, tempTexel, 0).x);
 		}
-		tempTexel.x -= textureSize(cloudMapTex, 0).x;
-		if (clamp(tempTexel, ivec2(0), textureSize(cloudMapTex, 0) - 1) == tempTexel) {
-			finalOut = vec3(texelFetch(cloudMapTex, tempTexel, 0).y);
+		tempTexel.x -= textureSize(cloudMapLo, 0).x;
+		if (clamp(tempTexel, ivec2(0), textureSize(cloudMapLo, 0) - 1) == tempTexel) {
+			finalOut = vec3(texelFetch(cloudMapLo, tempTexel, 0).y);
 		}
 	#endif
 
