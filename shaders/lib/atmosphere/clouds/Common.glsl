@@ -141,7 +141,7 @@ const CloudLayerParams cloudLayer2 = {
 	CLOUD_HIGH_THICKNESS,
 	CLOUD_HIGH_WIND_SPEED,
 	radians(CLOUD_HIGH_WIND_ANGLE),
-    CloudMediumCoeff(0.02, 0.02 * 0.98, 0.98)
+    CloudMediumCoeff(0.02, 0.02 * 0.99, 0.99)
 };
 
 //================================================================================================//

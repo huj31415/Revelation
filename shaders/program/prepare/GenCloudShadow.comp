@@ -69,7 +69,7 @@ void main() {
         // Raymarch along the light vector
         for (uint i = 0u; i < uint(steps) && extinction < threshold; ++i, rayPos += rayStep) {
             // Normalized height in clouds
-            float heightFraction = fma(length(rayPos), rcp(cloudLayer0.thickness), -cloudLayer0.minHeight / cloudLayer0.thickness);
+            float heightFraction = length(rayPos) * rcp(cloudLayer0.thickness) - cloudLayer0.minHeight / cloudLayer0.thickness;
             // if (abs(heightFraction - 0.5) > 0.5) break; // Skip if outside the clouds
 
             float temp;

@@ -51,6 +51,28 @@ float CloudHighDensity(vec2 rayPos) {
     float coverage = cloudMap.x;
     if (coverage < cloudDensityEpsilon) return 0.0;
 
+	float activeCoverage = 0.0;
+
+	#ifdef CLOUD_CI
+		float cirrusCoverage = CLOUD_CI_COVERAGE - 0.5 + cloudMap.y;
+		cirrusCoverage = sqr(linearstep(0.5, 1.0, cirrusCoverage));
+		activeCoverage = cirrusCoverage;
+	#endif
+
+	#ifdef CLOUD_CS
+		float cirrostratusCoverage = CLOUD_CS_COVERAGE - 0.5 + cloudMap.z;
+		cirrostratusCoverage = sqr(linearstep(0.5, 1.0, cirrostratusCoverage));
+		activeCoverage += cirrostratusCoverage;
+	#endif
+
+	#ifdef CLOUD_CC
+		float cirrocumulusCoverage = CLOUD_CC_COVERAGE - 0.5 + cloudMap.w;
+		cirrocumulusCoverage = smoothstep(0.5, 1.0, cirrocumulusCoverage);
+		activeCoverage += cirrocumulusCoverage;
+	#endif
+
+	if (activeCoverage < EPS) return 0.0;
+
 	vec2 curlNoise = texture(curlNoise2D, rayPos * 4e-5).xy * 0.25;
 
 	vec2 position = rayPos * 2e-4 - windOffset * 1e-4 + curlNoise;
@@ -67,38 +89,17 @@ float CloudHighDensity(vec2 rayPos) {
 
 	// Cirrus clouds
 	#ifdef CLOUD_CI
-	{
-		float coverage = cloudMap.y;
-		coverage = CLOUD_CI_COVERAGE - 0.5 + coverage;
-        coverage = sqr(linearstep(0.5, 1.0, coverage));
-
-        float cirrus = shapes.x;
-        density = cirrus * coverage;
-	}
+		density = shapes.x * cirrusCoverage;
 	#endif
 
 	// Cirrostratus clouds
 	#ifdef CLOUD_CS
-	{
-		float coverage = cloudMap.z;
-		coverage = CLOUD_CS_COVERAGE - 0.5 + coverage;
-        coverage = sqr(linearstep(0.5, 1.0, coverage));
-
-        float cirrostratus = shapes.y;
-        density += cirrostratus * coverage;
-	}
+		density += shapes.y * cirrostratusCoverage;
 	#endif
 
 	// Cirrocumulus clouds
 	#ifdef CLOUD_CC
-	{
-		float coverage = cloudMap.w;
-		coverage = CLOUD_CC_COVERAGE - 0.5 + coverage;
-        coverage = smoothstep(0.5, 1.0, coverage);
-
-        float cirrocumulus = shapes.z;
-        density += cirrocumulus * coverage;
-	}
+		density += shapes.z * cirrocumulusCoverage;
 	#endif
 
     density *= sqr(coverage) * 2.0;
@@ -123,6 +124,8 @@ float CloudHighDensity(vec2 rayPos) {
 #endif
 
 float CloudVolumeDensity(vec3 rayPos, float heightFraction, out float dimensionalProfile, bool detail) {
+	dimensionalProfile = 0.0;
+
 	// Wind field
 	const vec3 windDir = vec3(cos(cloudLayer0.windAngle), 0.5, sin(cloudLayer0.windAngle));
 	const vec3 windVelocity = windDir * cloudLayer0.windSpeed;
@@ -137,6 +140,7 @@ float CloudVolumeDensity(vec3 rayPos, float heightFraction, out float dimensiona
 	// Coveage profile
 	vec2 stepEdge = mix(vec2(0.5, 1.0) - CLOUD_CU_COVERAGE * 0.4, vec2(0.1, 0.4), sqr(wetness));
 	float coverage = linearstep(stepEdge.x, stepEdge.y, cloudMap.x);
+	if (coverage < 0.1) return 0.0;
 
 	float localCoverage = texture(noisetex, rayPos.xz * rcp(512e3) + 0.75).z;
 	coverage *= linearstep(stepEdge.x, stepEdge.y * 0.8, localCoverage);
