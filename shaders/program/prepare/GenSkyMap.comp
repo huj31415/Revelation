@@ -54,8 +54,8 @@ void main() {
 		vec2 noise = SampleStbnVec2(tid, frameCounter);
 
 		#ifdef CLOUDS
-			vec4 cloudData = RenderClouds(worldDir, noise);
-			CompositeClouds(skyRadiance, cloudData, worldDir);
+			CloudRenderResult cloudResult = RenderClouds(worldDir, noise, skyRadiance);
+            skyRadiance = skyRadiance * cloudResult.transmittance + cloudResult.scatteredLight;
 		#endif
 
 		#ifdef VOLUMETRIC_FOG

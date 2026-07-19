@@ -146,9 +146,11 @@ vec3 RenderCloudHigh(vec3 rayPos, vec3 lightDir, float noise, float LdotV) {
 
 //================================================================================================//
 
-vec4 RenderClouds(vec3 rayDir, vec2 noise) {
-	// x: sunlight, y: skylight, z: depth, w: transmittance
-	vec4 cloudData = vec4(0.0, 0.0, 1e6, 1.0);
+CloudRenderResult RenderClouds(vec3 rayDir, vec2 noise, vec3 skyRadiance) {
+    CloudRenderResult result = CloudRenderResult(vec3(0.0), 1.0, 1e6);
+
+	// x: sunlight, y: skylight
+	vec2 scatteringBase = vec2(0.0);
 
 	float moonlightFactor = smoothstep(-0.03, -0.05, sunDirWorld.y);
 	vec3 lightDir = normalize(sunDirWorld * oms(2.0 * moonlightFactor));
@@ -252,9 +254,9 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 
 				// Update integral data
 				if (lessThanFLT1(transmittance)) {
-					cloudData.xy = stepScattering * cloudLayer0.coeff.albedo;
-					cloudData.w = transmittance;
-					cloudData.z = sumDist / oms(transmittance);
+					scatteringBase = stepScattering * cloudLayer0.coeff.albedo;
+					result.transmittance = transmittance;
+					result.frontDepth = sumDist / oms(transmittance);
 				}
 			}
 		}
@@ -278,24 +280,19 @@ vec4 RenderClouds(vec3 rayDir, vec2 noise) {
 			// Update integral data
 			if (lessThanFLT1(cloudTemp.z)) {
 				// Blend layers
-				cloudData.xy = mix(cloudData.xy + cloudTemp.xy * cloudData.w, cloudData.xy * cloudTemp.z + cloudTemp.xy, step(cloudLayer2.minHeight, r));
+				scatteringBase = mix(scatteringBase + cloudTemp.xy * result.transmittance, scatteringBase * cloudTemp.z + cloudTemp.xy, step(cloudLayer2.minHeight, r));
 
 				// Update transmittance
-				cloudData.w *= cloudTemp.z;
+				result.transmittance *= cloudTemp.z;
 
 				// Update cloud depth
-				cloudData.z = min(rayLength, cloudData.z);
+				result.frontDepth = min(rayLength, result.frontDepth);
 			}
 		}
 	#endif
 
-	return cloudData;
-}
-
-void CompositeClouds(inout vec3 skyRadiance, vec4 cloudData, vec3 rayDir) {
-	// x: sunlight, y: skylight, z: depth, w: transmittance
-	if (lessThanFLT1(cloudData.w)) {
-		vec3 cloudPos = atmosphereViewPos + rayDir * cloudData.z;
+	if (lessThanFLT1(result.transmittance)) {
+		vec3 cloudPos = atmosphereViewPos + rayDir * result.frontDepth;
 
 		// Compute illumination to clouds
 		vec3 sunIlluminance = sunIrradiance * AtmosphereTransmittanceToSun(cloudPos, sunDirWorld);
@@ -307,21 +304,15 @@ void CompositeClouds(inout vec3 skyRadiance, vec4 cloudData, vec3 rayDir) {
         vec3 skyBottomIlluminance = ConvolvedReconstructSH3(global.skySH, vec3(0.0, -1.0, 0.0));
 		vec3 skyIlluminance = mix(skyBottomIlluminance, global.skyUpIlluminance, heightFraction);
 
-		vec3 scattering = cloudData.x * directIlluminance;
-		scattering += cloudData.y * rPI * skyIlluminance;
+		result.scatteredLight = scatteringBase.x * directIlluminance;
+		result.scatteredLight += scatteringBase.y * rPI * max0(skyIlluminance);
 
-		scattering += LightningContribution(cloudPos - atmosphereViewPos) * sqr(cloudData.y);
+		result.scatteredLight += LightningContribution(cloudPos - atmosphereViewPos) * sqr(scatteringBase.y);
 
 		// Aerial perspective
-		vec3 aerialT = AtmosphereTransmittanceToPoint(atmosphereViewPos, rayDir, cloudData.z);
-		#if 0
-			vec3 aerialSL = sunIrradiance * RaymarchScattering(cloudPos, rayDir, sunDirWorld);
-				aerialSL += moonIrradiance * RaymarchScattering(cloudPos, rayDir, moonDirWorld);
-
-			skyRadiance += aerialSL * aerialT * (cloudData.w - 1.0);
-			skyRadiance += scattering * aerialT;
-		#else
-			skyRadiance = skyRadiance * oms(oms(cloudData.w) * aerialT) + scattering * aerialT;
-		#endif
+		vec3 aerialT = AtmosphereTransmittanceToPoint(atmosphereViewPos, rayDir, result.frontDepth);
+		result.scatteredLight = mix(skyRadiance * oms(result.transmittance), result.scatteredLight, aerialT);
 	}
+
+	return result;
 }

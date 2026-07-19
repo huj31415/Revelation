@@ -144,6 +144,12 @@ const CloudLayerParams cloudLayer2 = {
     CloudMediumCoeff(0.02, 0.02 * 0.99, 0.99)
 };
 
+struct CloudRenderResult {
+	vec3 scatteredLight;
+	float transmittance;
+    float frontDepth;
+};
+
 //================================================================================================//
 
 // [Schneider, 2015]

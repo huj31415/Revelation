@@ -24,8 +24,6 @@ out vec3 sceneOut;
 
 //======// Uniform //=============================================================================//
 
-uniform sampler2D cloudOriginTex;
-
 #include "/lib/universal/Uniform.glsl"
 
 //======// SSBO //================================================================================//
@@ -40,7 +38,7 @@ uniform sampler2D cloudOriginTex;
 
 #include "/lib/atmosphere/Common.glsl"
 #include "/lib/atmosphere/Celestial.glsl"
-#include "/lib/atmosphere/clouds/Render.glsl"
+#include "/lib/atmosphere/clouds/Common.glsl"
 
 #include "/lib/surface/Material.glsl"
 
@@ -113,10 +111,10 @@ void main() {
 
 		// Clouds
 		#ifdef CLOUDS
-			vec4 cloudData = texture(cloudReconstructTex, screenCoord);
+			vec4 cloudResult = texture(cloudReconstructTex, screenCoord);
 
-			CompositeClouds(sceneOut, cloudData, worldDir);
-			transmittance *= cloudData.w;
+			sceneOut = sceneOut * cloudResult.a + cloudResult.rgb;
+			transmittance *= cloudResult.a;
 		#endif
 
 		// Celestial objects

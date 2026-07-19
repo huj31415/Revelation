@@ -30,6 +30,7 @@ layout(local_size_x = 16, local_size_y = 16) in;
 //======// Uniform //=============================================================================//
 
 writeonly uniform image2D cloudOriginImg;
+writeonly uniform image2D cloudDepthImg;
 
 #include "/lib/universal/Uniform.glsl"
 
@@ -79,8 +80,7 @@ void main() {
 		coord *= float(CLOUD_TAAU_SCALE);
 	#endif
 
-	// x: sunlight, y: skylight, z: depth, w: transmittance
-	vec4 cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
+	CloudRenderResult result = CloudRenderResult(vec3(0.0), 1.0, 0.0);
 
 	if (SkyCheck4x4(scaleScreenUv(coord))) {
 		vec2 noise = SampleStbnVec2(texelPos, frameCounter + 11);
@@ -88,8 +88,10 @@ void main() {
 		vec3 viewDir  = ScreenToViewDirRaw(coord);
 		vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
 
-		cloudOut = RenderClouds(worldDir, noise);
+		vec3 skyRadiance = AtmosphereSkyView(atmosphereViewPos, worldDir, sunDirWorld);
+		result = RenderClouds(worldDir, noise, skyRadiance);
 	}
 
-	imageStore(cloudOriginImg, texelPos, cloudOut);
+	imageStore(cloudOriginImg, texelPos, vec4(result.scatteredLight, result.transmittance));
+	imageStore(cloudDepthImg, texelPos, vec4(result.frontDepth));
 }

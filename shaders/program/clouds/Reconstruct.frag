@@ -25,6 +25,7 @@ layout(location = 1) out uint frameOut;
 //======// Uniform //=============================================================================//
 
 uniform sampler2D cloudOriginTex;
+uniform sampler2D cloudDepthTex;
 
 #include "/lib/universal/Uniform.glsl"
 
@@ -75,8 +76,8 @@ vec3 ReprojectClouds(vec2 coord, float depth) {
 
 //======// Main //================================================================================//
 void main() {
-	// x: sunlight, y: skylight, z: depth, w: transmittance
-	cloudOut = vec4(0.0, 0.0, 1e6, 1.0);
+	// rgb: scattered light, a: transmittance
+	cloudOut = vec4(0.0, 0.0, 0.0, 1.0);
 	frameOut = 0u;
 
     vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
@@ -93,7 +94,7 @@ void main() {
     #endif
 
 	// Fetch closest cloud depth
-	float cloudDepth = minOf(textureGather(cloudOriginTex, currCoord, 2));
+	float cloudDepth = minOf(textureGather(cloudDepthTex, currCoord));
 
 	// Skip ground
 	if (cloudDepth < EPS) return;
@@ -141,15 +142,8 @@ void main() {
 			prevData += moment1;
 		#endif
 
-		// Fix depth edge artifects
-		currData.z *= 1.0 - currData.w;
-		prevData.z *= 1.0 - prevData.w;
-
 		// Accumulate
 		frameOut = min(frameIndex + 1u, CLOUD_MAX_ACCUM_FRAMES);
 		cloudOut = mix(prevData, currData, rcp(float(frameOut)));
-
-		// Fix depth edge artifects
-		cloudOut.z /= maxEps(1.0 - cloudOut.w);
 	}
 }

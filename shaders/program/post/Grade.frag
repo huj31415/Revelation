@@ -130,24 +130,26 @@ vec3 Lottes(vec3 x) {
 #include "/lib/post/GT.glsl"
 
 #ifdef HDR_ENABLED
-	#define TONE_MAPPER_ HDR_TONE_MAPPER
+	#define REAL_TONE_MAPPER HDR_TONE_MAPPER
 #else
-	#define TONE_MAPPER_ TONE_MAPPER
+	#define REAL_TONE_MAPPER TONE_MAPPER
 #endif
 
-#if TONE_MAPPER_ == TONEMAPPER_AgX_Minimal
+#if REAL_TONE_MAPPER == 1
 	#define TONEMAPPING_FN AgX_Minimal
-#elif TONE_MAPPER_ == TONEMAPPER_AgX_Full
+#elif REAL_TONE_MAPPER == 2
 	#define TONEMAPPING_FN AgX_Full
-#elif TONE_MAPPER_ == TONEMAPPER_ACES_Fit
+#elif REAL_TONE_MAPPER == 3
+    #define TONEMAPPING_FN AgX_AllenWp
+#elif REAL_TONE_MAPPER == 16
 	#define TONEMAPPING_FN AcademyFit
-#elif TONE_MAPPER_ == TONEMAPPER_ACES_2
+#elif REAL_TONE_MAPPER == 17
 	#define TONEMAPPING_FN ACES2
-#elif TONE_MAPPER_ == TONEMAPPER_GT
+#elif REAL_TONE_MAPPER == 32
 	#define TONEMAPPING_FN GT
-#elif TONE_MAPPER_ == TONEMAPPER_GT7
+#elif REAL_TONE_MAPPER == 33
 	#define TONEMAPPING_FN GT7
-#elif TONE_MAPPER_ == TONEMAPPER_Lottes
+#elif REAL_TONE_MAPPER == 48
 	#define TONEMAPPING_FN Lottes
 #else
 	#define TONEMAPPING_FN None
