@@ -43,11 +43,7 @@ writeonly uniform image2D colorimg4;
 //======// Function //============================================================================//
 
 #if DOWNSAMPLE_LEVEL == 0
-    #if RENDER_SCALE_1000X == 1000
-	    #define bloomTileTex colortex1
-    #else
-	    #define bloomTileTex colortex3
-    #endif
+	#define bloomTileTex colortex1
 #else
 	#define bloomTileTex colortex4
 #endif

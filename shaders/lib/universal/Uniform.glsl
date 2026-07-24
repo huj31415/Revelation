@@ -42,6 +42,7 @@ uniform sampler2D cloudMapLo;
 uniform sampler2D cloudMapHi;
 uniform sampler2D verticalLut;
 uniform sampler2D cirroLutTex;
+uniform sampler2D cloudPhaseLut;
 
 uniform sampler2D skyEnvMapTex;
 uniform sampler2D cloudShadowTex;

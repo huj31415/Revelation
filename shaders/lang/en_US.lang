@@ -328,7 +328,7 @@ option.ROUGH_REFLECTIONS_THRESHOLD=Rough Reflections Threshold
 option.REFLECTION_FILTER=Reflection Filter
 
 option.RAYTRACED_REFRACTION=Raytraced Refraction
-option.REFRACTION_STRENGTH=Refraction Strength
+option.REFRACTION_SAMPLES=Refraction Samples
 
 # Transparent
 option.WATER_PARALLAX=Water Parallax
@@ -357,6 +357,27 @@ option.SELECTION_BOX_COLOR_B=Selection Box Color §1Blue
 
 
 # Post-Processing
+option.DEPTH_OF_FIELD=Depth of Field
+option.CAMERA_FOCUS_MODE=Focus Mode
+value.CAMERA_FOCUS_MODE.0=Auto
+value.CAMERA_FOCUS_MODE.1=Manual
+option.DOF_FOCUS_IGNORE_HAND=Ignore Hand When Focusing
+option.DOF_FOCAL_LENGTH=Focal Length
+suffix.DOF_FOCAL_LENGTH=mm
+option.DOF_F_STOP=F-Stop
+option.DOF_APERTURE_SHAPE=Aperture Shape
+value.DOF_APERTURE_SHAPE.0=Circular
+value.DOF_APERTURE_SHAPE.1=Hexagonal
+option.DOF_APERTURE_VIGNETTING=Aperture Vignetting
+option.DOF_GATHER_SAMPLES=Gather Sample Count
+option.DOF_COC_SPREAD_SAMPLES=CoC Search Sample Count
+option.DOF_MAX_BLUR_RADIUS=Maximum Blur Radius
+suffix.DOF_MAX_BLUR_RADIUS=px
+option.DOF_FOCUS_HALFLIFE=Focus Response Half-Life
+suffix.DOF_FOCUS_HALFLIFE=s
+option.DOF_MANUAL_FOCUS_DISTANCE=Manual Focus Distance
+suffix.DOF_MANUAL_FOCUS_DISTANCE=m
+
 option.TAA_ENABLED=Temporal Anti-Aliasing
 option.TAA_CLOSEST_FRAGMENT=Closest Fragment
 option.TAA_CLOSEST_FRAGMENT.comment=Selects the fragment with the smallest depth from the current pixel and its four diagonal neighbors for history reprojection, reducing ghosting and smearing at motion boundaries.

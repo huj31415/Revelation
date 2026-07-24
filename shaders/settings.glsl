@@ -32,6 +32,7 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 /* Clouds */
 	#define CLOUDS
 	#define CLOUD_SHADOWS
+	#define CLOUD_PHASE_LUT_COLORED 0 // [0 1] 0: R16F luminance, 1: RGB16F color
 
 	#ifndef CLOUDS
 		#undef CLOUD_SHADOWS
@@ -200,7 +201,7 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 /* Refractions */
 	// #define RAYTRACED_REFRACTION
-	#define REFRACTION_STRENGTH 1.0 // [0.0 0.1 0.2 0.25 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2.0 2.2 2.4 2.6 2.8 3.0 3.2 3.4 3.6 3.8 4.0 4.2 4.4 4.6 4.8 5.0 5.5 6.0 6.5 7.0 7.5 8.0 9.5 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0]
+    #define REFRACTION_SAMPLES 8 // [1 2 4 8 16 32 64 128]
 
 /* Emissive */
 	#define EMISSIVE_MODE 1 // [0 1 2]
@@ -264,7 +265,19 @@ const float realShadowMapRes = float(shadowMapResolution) * MC_SHADOW_QUALITY;
 
 /* Depth of Field */
 	// #define DEPTH_OF_FIELD
+    #ifdef DEPTH_OF_FIELD
+    #endif
+	// #define DOF_APERTURE_VIGNETTING
 	#define CAMERA_FOCUS_MODE 0 // [0 1]
+	#define DOF_FOCAL_LENGTH 50.0 // [18.0 24.0 35.0 50.0 75.0 100.0]
+	#define DOF_F_STOP 2.0 // [1.0 1.4 2.0 2.8 4.0 5.6 8.0 11.0 16.0]
+	#define DOF_APERTURE_SHAPE 0 // [0 1]
+	#define DOF_GATHER_SAMPLES 32 // [8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 40 48 56 64]
+	#define DOF_COC_SPREAD_SAMPLES 10 // [4 6 8 10 12 14 16 18 20 24 32]
+	#define DOF_MAX_BLUR_RADIUS 12.0 // [4.0 6.0 8.0 10.0 12.0 16.0 20.0 24.0 32.0]
+	#define DOF_FOCUS_HALFLIFE 0.05 // [0.04 0.05 0.075 0.1 0.15 0.2 0.25 0.3 0.4 0.5 0.75 1.0]
+	#define DOF_MANUAL_FOCUS_DISTANCE 10.0 // [1.0 2.0 3.0 4.0 5.0 6.0 8.0 10.0 12.0 16.0 20.0 24.0 32.0 48.0 64.0 96.0 128.0 192.0 256.0 512.0]
+	#define DOF_FOCUS_IGNORE_HAND
 
 /* TAA */
 	#define TAA_ENABLED

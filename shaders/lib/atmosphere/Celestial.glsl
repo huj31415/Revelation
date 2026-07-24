@@ -55,7 +55,7 @@ vec4 RenderMoon(vec3 worldDir, vec3 moonDir) {
 
 		uv = vec2(longitude * rTAU + 0.5, latitude * rPI);
 		// vec3 color = sRGBToLinear(texture(moonTex, uv).rgb) * sRGB_2_Rec2020;
-		vec3 color = pow4(texture(moonTex, uv).rgb) * 0.5;
+		vec3 color = pow4(texture(moonTex, uv).rgb);
 
 		return vec4(diffuse * color * moonRadiance, 1.0);
 	}
@@ -65,28 +65,19 @@ vec4 RenderMoon(vec3 worldDir, vec3 moonDir) {
 //================================================================================================//
 
 // Source: https://www.shadertoy.com/view/XtGGRt
-vec3 nmzHash33(vec3 q) {
-	uvec3 p = uvec3(ivec3(q));
-	p = p * uvec3(374761393U, 1103515245U, 668265263U) + p.zxy + p.yzx;
-	p = p.yzx * (p.zxy ^ (p >> 3U));
-	return vec3(p ^ (p >> 16U)) * rcp(vec3(0xffffffffU));
-}
-
 vec3 RenderStars(vec3 worldDir) {
-	// vec3 p = rotate(worldDir, sunDirWorld, vec3(0.0, 0.0, 1.0));
-	vec3 p = worldDir * mat3(shadowModelViewInverse);
-
+	vec3 p = mat3(shadowModelView) * worldDir;
 	vec3 c = vec3(0.0);
-	const float res = 768.0;
 
-	for (int i = 0; i < 4; ++i) {
-		vec3 q = fract(p * (0.15 * res)) - 0.5;
-		vec3 id = floor(p * (0.15 * res));
+	for (uint i = 0u; i < 4u; ++i) {
+        vec3 sp = p * 128.0;
+		vec3 id = floor(sp);
+		vec3 q = sp - id - 0.5;
 
-		vec2 rn = nmzHash33(id).xy;
+		vec2 rn = hash23(id);
 
 		float c2 = 1.0 - saturate(length(q) * 2.5);
-			c2 *= step(rn.x, STARS_COVERAGE * 0.001 + sqr(i) * 0.001);
+		c2 *= step(rn.x, STARS_COVERAGE * 0.001 + sqr(float(i)) * 0.001);
 
 		c += c2 * (mix(vec3(1.0, 0.49, 0.1), vec3(0.75, 0.9, 1.0), rn.y) + 0.25);
 		p *= 1.3;

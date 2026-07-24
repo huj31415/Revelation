@@ -168,10 +168,8 @@ void main() {
 	#endif
     #ifdef MOTION_BLUR
         color = texelFetch(colortex0, texelPos, 0).rgb;
-    #elif RENDER_SCALE_1000X == 1000
-        color = texelFetch(colortex1, texelPos, 0).rgb;
     #else
-        color = texelFetch(colortex3, texelPos, 0).rgb;
+        color = texelFetch(colortex1, texelPos, 0).rgb;
     #endif
 
 	// Bloom and fog

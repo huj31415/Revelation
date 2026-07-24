@@ -26,6 +26,7 @@
 */
 
 #include "/lib/atmosphere/clouds/Shape.glsl"
+#include "/lib/atmosphere/clouds/PhaseLut.glsl"
 
 //================================================================================================//
 
@@ -90,9 +91,10 @@ float CloudMultiScatteringApproxOz(float opticalDepth, float phase) {
 	return scattering;
 }
 
-vec2 CloudMultiScatteringApproxHaringPro(float sunlightOD, float phase, float coarseExtinction, float albedo, vec3 lightDir) {
+vec2 CloudMultiScatteringApproxHaringPro(float sunlightOD, float phase, float coarseExtinction, vec3 lightDir) {
 	// https://zhuanlan.zhihu.com/p/457997155
-	float fms = albedo * oms(approxExp(-192.0 * coarseExtinction));
+    const float omega = 0.99;
+	float fms = omega * oms(exp2(-320.0 * coarseExtinction));
     float msBase = fms / (1.0 - fms);
 
     float scatteringSun = exp(-sunlightOD) * phase; // Accurate single scattering
@@ -133,9 +135,9 @@ vec3 RenderCloudHigh(vec3 rayPos, vec3 lightDir, float noise, float LdotV) {
         float opticalDepthSun = cloudLayer2.coeff.extinction * 2.0 * stepLength * sumDensity;
 
 		// Approximate multi-scattering
-		float phase = HenyeyGreensteinPhase(LdotV, 0.8);
-		float coarseExtinction = fma(density, 0.6, 0.4) * cloudLayer2.coeff.extinction;
-		vec2 scattering = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, coarseExtinction, cloudLayer2.coeff.albedo, lightDir);
+		float phase = SampleCloudPhaseLutScalar(LdotV, CLOUD_PHASE_CI);
+		float coarseExtinction = fma(density, 0.8, 0.4) * cloudLayer2.coeff.extinction;
+		vec2 scattering = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, coarseExtinction, lightDir);
 
 		scattering *= oms(transmittance) * cloudLayer2.coeff.albedo;
 		return vec3(scattering, transmittance);
@@ -161,13 +163,7 @@ CloudRenderResult RenderClouds(vec3 rayDir, vec2 noise, vec3 skyRadiance) {
 	float mu = rayDir.y; // dot(atmosphereViewPos, rayDir) / r
 
 	// Compute phase function
-	#if 0
-		float phase = TripleLobePhase(LdotV, cloudForwardG, cloudBackwardG, cloudLobeMixer, cloudSilverG, cloudSilverI);
-	#elif 1
-		float phase = HgDrainePhase(LdotV, 11.0);
-	#else
-		float phase = NumericalMieFit(LdotV);
-	#endif
+	float phase = SampleCloudPhaseLutScalar(LdotV, CLOUD_PHASE_CU);
 
 	bool planetIntersection = RayIntersectPlanetGround(r, mu);
 
@@ -226,7 +222,7 @@ CloudRenderResult RenderClouds(vec3 rayDir, vec2 noise, vec3 skyRadiance) {
 
 						// Approximate multi-scattering
 						float coarseExtinction = dimensionalProfile * approxSqrt(stepDensity) * cloudLayer0.coeff.extinction;
-						vec2 scattering = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, coarseExtinction, cloudLayer0.coeff.albedo, lightDir);
+						vec2 scattering = CloudMultiScatteringApproxHaringPro(opticalDepthSun, phase, coarseExtinction, lightDir);
 
 						// Estimate the ground reflected light
 						float scatteringGround = oms(sqr(dimensionalProfile)) * oms(heightFraction) * lightDir.y;

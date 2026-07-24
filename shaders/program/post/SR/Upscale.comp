@@ -20,7 +20,7 @@ const vec2 workGroupsRender = vec2(1.0, 1.0);
 
 #include "/lib/Utility.glsl"
 
-#define FSR1_EASU_IN colortex1
+#define FSR1_EASU_IN colortex0
 #define FSR1_EASU_OUT colorimg3
 
 //======// Uniform //=============================================================================//
@@ -37,7 +37,8 @@ restrict writeonly uniform image2D FSR1_EASU_OUT; // Upscaled scene color
 void main() {
     #if UPSCALE_MODE == 0
         ivec2 texelPos = ivec2(gl_GlobalInvocationID.xy);
-        imageStore(FSR1_EASU_OUT, texelPos, texture(FSR1_EASU_IN, texelToUv(texelPos)));
+        vec2 scaledUv = scaleScreenUv(texelToUv(texelPos));
+        imageStore(FSR1_EASU_OUT, texelPos, texture(FSR1_EASU_IN, scaledUv));
     #else
         fsr1Easu(scaledViewSize, originViewSize, originViewSize);
     #endif

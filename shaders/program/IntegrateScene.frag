@@ -50,39 +50,44 @@ layout(location = 0) out vec4 sceneOut;
 
 vec2 CalculateRefractedCoord(ivec2 texelPos, vec3 viewPos, vec3 screenPos, bool waterMask) {
 	vec3 viewNormal = mat3(gbufferModelView) * FetchSurfaceNormal(texelPos);
-	float viewLengthInv = inversesqrt(sdot(viewPos));
-	vec3 viewDir = viewPos * viewLengthInv;
+	vec3 viewDir = normalize(viewPos);
 
-	vec3 refractedDir;
-	if (waterMask) {
-		vec3 viewGeometryNormal = mat3(gbufferModelView) * FetchGeometryNormal(texelPos);
-		refractedDir = refract(viewDir, viewNormal - viewGeometryNormal * 0.95, 1.0 / WATER_IOR);
-	} else {
-		refractedDir = refract(viewDir, viewNormal, 1.0 / GLASS_IOR);
-	}
+	vec3 refractedDir = refract(viewDir, viewNormal, waterMask ? 1.0 / WATER_IOR : 1.0 / GLASS_IOR);
 
 	#ifdef RAYTRACED_REFRACTION
 		float dither = BlueNoise(texelPos, frameCounter);
 		vec3 rayPos = screenPos;
 
-		if (!ScreenSpaceRaytrace(viewPos, refractedDir, dither, 16, rayPos)) return screenPos.xy;
+		if (!ScreenSpaceRaytrace(viewPos, refractedDir, dither, REFRACTION_SAMPLES, rayPos)) {
+            return screenPos.xy;
+        }
 
 		vec2 refractedCoord = rayPos.xy;
 	#else
-		// Estimate refraction depth
-		float depth1 = loadDepth1(texelPos);
-		vec3 viewPos1 = ScreenToViewPos(vec3(screenPos.xy, depth1));
-		#if defined LOD_MOD
-			if (depth1 > 1.0 - EPS) {
-				depth1 = loadDepth1Lod(texelPos);
-				viewPos1 = ScreenToViewPosLod(vec3(screenPos.xy, depth1));
-			}
-		#endif
+        // Newton's method for refraction
+        // https://jcgt.org/published/0015/01/03/
+        vec3 viewPosBack = ScreenToViewPos(vec3(screenPos.xy, loadDepth1(texelPos)));
+		vec2 refractedCoord = screenPos.xy;
 
-		refractedDir *= min(distance(viewPos, viewPos1) * viewLengthInv, 4.0);
-		refractedDir *= mix(0.125, 4.0, waterMask) * REFRACTION_STRENGTH;
+        for (uint i = 0u; i < REFRACTION_SAMPLES; ++i) {
+            float denom = dot(viewNormal, refractedDir);
+            if (abs(denom) < EPS) break;
 
-		vec2 refractedCoord = ViewToScreenPos(viewPos + refractedDir).xy;
+            float t = dot(viewPosBack - viewPos, viewNormal) / denom;
+            vec3 hitViewPos = viewPos + refractedDir * t;
+
+            vec3 hitScreenPos = ViewToScreenPos(hitViewPos);
+            ivec2 hitTexelPos = uvToTexelScaled(hitScreenPos.xy);
+
+            vec3 screenPosBack = vec3(hitScreenPos.xy, loadDepth1(hitTexelPos));
+            viewPosBack = ScreenToViewPos(screenPosBack);
+            viewNormal = mat3(gbufferModelView) * FetchGeometryNormal(hitTexelPos);
+
+            if (sdot(hitViewPos - viewPosBack) < 1.0) {
+                refractedCoord = hitScreenPos.xy;
+                break;
+            }
+        }
 	#endif
 
 	float refractedDepth = loadDepth1(uvToTexelScaled(refractedCoord));

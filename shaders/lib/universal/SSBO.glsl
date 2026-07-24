@@ -8,6 +8,7 @@ layout(std430, binding = 0) SSBO_DECLARED_TPYE buffer GlobalData {
 	vec3 directIlluminance;
 	vec3 skyUpIlluminance;
 	vec3[9] skySH;
+	float dofFocusDistance;
 } global;
 
 layout(std430, binding = 1) SSBO_DECLARED_TPYE buffer ExposureData {

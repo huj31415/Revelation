@@ -78,18 +78,24 @@ vec3 historyClipAABB(vec3 history, vec3 center, vec3 extent) {
 	return history;
 }
 
-vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
-	ivec2 texel = uvToTexelScaled(screenCoord + taaJitter * 0.5);
+#if RENDER_SCALE_1000X != 1000
+    #define loadInput(texel) (texelFetch(colortex3, texel, 0).rgb)
+#else
+    #define loadInput loadSceneMain
+#endif
 
-	vec3 currData = loadSceneMain(texel);
+vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
+	ivec2 texel = uvToTexel(screenCoord + taaJitter * 0.5);
+
+	vec3 currData = loadInput(texel);
 	vec2 prevCoord = screenCoord + motionVector;
 
 	if (saturate(prevCoord) != prevCoord) return vec4(YCoCgToRGB(currData), 1.0);
 
 	#ifdef TAA_SHARPEN
-		vec4 temporalData = textureCatmullRomFastAntiRing(colortex1, scaleScreenUv(prevCoord));
+		vec4 temporalData = textureCatmullRomFastAntiRing(colortex1, prevCoord);
 	#else
-		vec4 temporalData = texture(colortex1, scaleScreenUv(prevCoord));
+		vec4 temporalData = texture(colortex1, prevCoord);
 	#endif
 
 	vec3 prevData = RGBToYCoCg(temporalData.rgb);
@@ -102,7 +108,7 @@ vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
 		vec3 moment2 = currData * currData;
 
 		for (uint i = 0u; i < 8u; ++i) {
-			vec3 sampleData = texelFetch(colortex0, texel + offset3x3N[i], 0).rgb;
+			vec3 sampleData = loadInput(texel + offset3x3N[i]);
 
 			moment1 += sampleData;
 			moment2 += sampleData * sampleData;
@@ -124,7 +130,7 @@ vec4 TemporalReprojection(vec2 screenCoord, vec2 motionVector) {
 	#endif
 
 	// Subpixel sharpening
-	prevData = mix(prevData, currData, sdot(fract(prevCoord * scaledViewSize) - 0.5) * 0.5);
+	prevData = mix(prevData, currData, sdot(fract(prevCoord * originViewSize) - 0.5) * 0.5);
 
 	float blendWeight = min(++temporalData.a, TAA_MAX_ACCUM_FRAMES);
 	blendWeight *= 1.0 + sqr(temporalContrast) * TAA_ANTIFLICKER;
@@ -140,7 +146,7 @@ void main() {
 	ivec2 screenTexel = ivec2(gl_FragCoord.xy);
 
 	float depth = loadDepth0(screenTexel);
-	vec2 screenCoord = gl_FragCoord.xy * scaledTexelSize;
+	vec2 screenCoord = gl_FragCoord.xy * originTexelSize;
 
 	#if RENDER_MODE == 1
 		vec2 motionVector;
@@ -170,11 +176,11 @@ void main() {
 		#ifdef TAA_ENABLED
 			temporalOut = TemporalReprojection(screenCoord, motionVector);
 		#else
-			temporalOut = vec4(loadSceneMain(screenTexel), 1.0);
+			temporalOut = vec4(loadInput(screenTexel), 1.0);
 		#endif
 	#else
-		ivec2 srcTexel = uvToTexelScaled(screenCoord + taaJitter * 0.5);
-		temporalOut = vec4(loadSceneMain(srcTexel), 1.0);
+		ivec2 srcTexel = uvToTexel(screenCoord + taaJitter * 0.5);
+		temporalOut = vec4(loadInput(srcTexel), 1.0);
 
 		vec2 prevCoord = ReprojectScreenPos(vec3(screenCoord, depth)).xy;
 		if (distance(prevCoord, screenCoord) < EPS) {

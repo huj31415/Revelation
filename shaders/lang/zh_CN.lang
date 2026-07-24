@@ -332,7 +332,7 @@ option.ROUGH_REFLECTIONS_THRESHOLD=粗糙反射阈值
 option.REFLECTION_FILTER=反射过滤
 
 option.RAYTRACED_REFRACTION=光线追踪折射
-option.REFRACTION_STRENGTH=折射强度
+option.REFRACTION_SAMPLES=折射采样数
 
 # Transparent
 option.WATER_PARALLAX=水体视差
@@ -361,6 +361,27 @@ option.SELECTION_BOX_COLOR_B=选择框颜色-§1蓝
 
 
 # Post-Processing
+option.DEPTH_OF_FIELD=景深
+option.CAMERA_FOCUS_MODE=对焦模式
+value.CAMERA_FOCUS_MODE.0=自动
+value.CAMERA_FOCUS_MODE.1=手动
+option.DOF_FOCUS_IGNORE_HAND=对焦时忽略手部
+option.DOF_FOCAL_LENGTH=焦距
+suffix.DOF_FOCAL_LENGTH=毫米
+option.DOF_F_STOP=光圈值
+option.DOF_APERTURE_SHAPE=光圈形状
+value.DOF_APERTURE_SHAPE.0=圆形
+value.DOF_APERTURE_SHAPE.1=六边形
+option.DOF_APERTURE_VIGNETTING=口径蚀
+option.DOF_GATHER_SAMPLES=聚集采样数
+option.DOF_COC_SPREAD_SAMPLES=弥散圆搜索采样数
+option.DOF_MAX_BLUR_RADIUS=最大模糊半径
+suffix.DOF_MAX_BLUR_RADIUS=像素
+option.DOF_FOCUS_HALFLIFE=对焦响应半衰期
+suffix.DOF_FOCUS_HALFLIFE=秒
+option.DOF_MANUAL_FOCUS_DISTANCE=手动对焦距离
+suffix.DOF_MANUAL_FOCUS_DISTANCE=米
+
 option.TAA_ENABLED=时域抗锯齿(TAA)
 option.TAA_CLOSEST_FRAGMENT=片元择邻
 option.TAA_CLOSEST_FRAGMENT.comment=从当前像素及其四个对角邻域中选择深度最近的片元进行历史重投影，减少运动物体边缘的重影和拖尾。

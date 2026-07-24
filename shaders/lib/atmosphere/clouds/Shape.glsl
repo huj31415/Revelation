@@ -47,27 +47,30 @@ float CloudHighDensity(vec2 rayPos) {
 	rayPos -= windOffset;
 	rayPos += cameraPosition.xz;
 
-	vec4 cloudMap = texture(cloudMapHi, rayPos * rcp(512e3));
-    float coverage = cloudMap.x;
-    if (coverage < cloudDensityEpsilon) return 0.0;
+    // Sample cloud coverage
+    // R: Ci, G: Cs, B: Cc, A: shared
+	vec4 cloudMap = texture(cloudMapHi, rayPos * rcp(384e3));
+
+    float sharedCoverage = cloudMap.w;
+    if (sharedCoverage < cloudDensityEpsilon) return 0.0;
 
 	float activeCoverage = 0.0;
 
 	#ifdef CLOUD_CI
-		float cirrusCoverage = CLOUD_CI_COVERAGE - 0.5 + cloudMap.y;
-		cirrusCoverage = sqr(linearstep(0.5, 1.0, cirrusCoverage));
+		float cirrusCoverage = CLOUD_CI_COVERAGE - 0.5 + cloudMap.x;
+		cirrusCoverage = sqr(linearstep(0.35, 1.0, cirrusCoverage));
 		activeCoverage = cirrusCoverage;
 	#endif
 
 	#ifdef CLOUD_CS
-		float cirrostratusCoverage = CLOUD_CS_COVERAGE - 0.5 + cloudMap.z;
+		float cirrostratusCoverage = CLOUD_CS_COVERAGE - 0.5 + cloudMap.y;
 		cirrostratusCoverage = sqr(linearstep(0.5, 1.0, cirrostratusCoverage));
 		activeCoverage += cirrostratusCoverage;
 	#endif
 
 	#ifdef CLOUD_CC
-		float cirrocumulusCoverage = CLOUD_CC_COVERAGE - 0.5 + cloudMap.w;
-		cirrocumulusCoverage = smoothstep(0.5, 1.0, cirrocumulusCoverage);
+		float cirrocumulusCoverage = CLOUD_CC_COVERAGE - 0.5 + cloudMap.z;
+		cirrocumulusCoverage = smoothstep(0.45, 1.0, cirrocumulusCoverage);
 		activeCoverage += cirrocumulusCoverage;
 	#endif
 
@@ -78,12 +81,12 @@ float CloudHighDensity(vec2 rayPos) {
 	vec2 position = rayPos * 2e-4 - windOffset * 1e-4 + curlNoise;
     position *= goldenRotate;
 
-    vec2 lookupPos = position * 0.3 - coverage * 0.1;
+    vec2 lookupPos = position * 0.3 - sharedCoverage * 0.1;
     vec3 shapes = texture(cirroLutTex, lookupPos).xyz;
     shapes.z = smoothstep(0.1, 1.0, shapes.z); // Cirrocumulus
 
     // Sharpen shapes with low coverage
-    shapes = mix(pow4(shapes), shapes, coverage);
+    shapes = mix(pow4(shapes), shapes, dot(cloudMap, vec4(0.25)));
 
 	float density = 0.0;
 
@@ -102,8 +105,8 @@ float CloudHighDensity(vec2 rayPos) {
 		density += shapes.z * cirrocumulusCoverage;
 	#endif
 
-    density *= sqr(coverage) * 2.0;
-	return density;
+    density *= sqr(sharedCoverage) * 4.0;
+	return saturate(density);
 }
 
 //================================================================================================//
@@ -150,14 +153,14 @@ float CloudVolumeDensity(vec3 rayPos, float heightFraction, out float dimensiona
 	// heightFraction = ValueErosion(heightFraction, oms(cloudMap.y) * 0.3);
 	float gradient = GetVerticalProfile(heightFraction, type);
 
-	#if 0
-	dimensionalProfile = (gradient * coverage);
+	#if 1
+	dimensionalProfile = gradient * coverage;
 	#else
 	dimensionalProfile = saturate(gradient + coverage - 1.0);
 	#endif
-	if (dimensionalProfile < 0.1) return 0.0;
+	if (dimensionalProfile < 0.05) return 0.0;
 
-	vec3 noisePos = (rayPos - windDir * heightFraction * cloudLayer0.thickness * 0.5) * rcp(2e3);
+	vec3 noisePos = (rayPos - windDir * heightFraction * cloudLayer0.thickness * 0.25) * rcp(2e3);
 	noisePos.y += dot(noisePos.xz, vec2(0.2, 0.3)); // Reduce repetition pattern
 
 	// Add curl noise
@@ -178,7 +181,7 @@ float CloudVolumeDensity(vec3 rayPos, float heightFraction, out float dimensiona
 	#endif
 
 	// See [Schneider, 2022]
-	float cloudDensity = dimensionalProfile + (baseNoise - 1.0) * 0.75;
+	float cloudDensity = dimensionalProfile + (baseNoise - 1.0) * 0.65;
 	if (cloudDensity < cloudDensityEpsilon) return 0.0;
 
 	float heightFade = smoothstep(0.1, 0.5, heightFraction);
